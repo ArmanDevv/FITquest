@@ -8,7 +8,7 @@ import image4 from "../../assets/image4.png"
 const images = [image1, image2, image3, image4];
 
 const zoomOutProperties = {
-  duration: 5000,
+  duration: 2000,
   transitionDuration: 500,
   infinite: true,
   indicators: true,
@@ -17,10 +17,10 @@ const zoomOutProperties = {
 };
 const Slideshow = () => {
     return (
-      <div className="slide-container">
+      <div className="slide-container justify-center items-center">
         <Zoom {...zoomOutProperties}>
           {images.map((each, index) => (
-            <img key={index} style={{ width: "100%" }} src={each} />
+            <img key={index} style={{ width: "80%" , marginLeft: "10%", marginTop: "5%"}} src={each} />
           ))}
         </Zoom>
       </div>
