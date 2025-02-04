@@ -14,7 +14,6 @@ function App() {
   <div className='flex flex-col bg-gradient-to-r from-black via-teal-950 to-black text-white h-screen min-h-screen'>
       <Navbar/>
      <Home/>
-     <Singin/>
       <Footer/>
       </div>
 
