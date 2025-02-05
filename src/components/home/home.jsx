@@ -1,55 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
+import GoogleFitComponent from "../GoogleFitComponent"  // Import the new component
 
 const Home = () => {
-  const [isGoogleFitConnected, setIsGoogleFitConnected] = useState(false);
-  
-  // Simulated user fitness data
-  const [userData, setUserData] = useState(null);
-
-  const handleGoogleFitConnect = () => {
-    // Simulate connection process
-    setIsGoogleFitConnected(true);
-    setUserData({
-      steps: 6543,
-      calories: 420,
-      distance: 4.7
-    });
-  };
-
-  const renderGoogleFitContent = () => {
-    if (!isGoogleFitConnected) {
-      return (
-        <div className="flex items-center justify-center h-full">
-          <button 
-            onClick={handleGoogleFitConnect}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
-          >
-            Connect to Google Fit
-          </button>
-        </div>
-      );
-    }
-
-    return (
-      <div className="p-4">
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <h3 className="font-bold text-lg">{userData.steps}</h3>
-            <p className="text-gray-600">Steps</p>
-          </div>
-          <div>
-            <h3 className="font-bold text-lg">{userData.calories}</h3>
-            <p className="text-gray-600">Calories</p>
-          </div>
-          <div>
-            <h3 className="font-bold text-lg">{userData.distance} km</h3>
-            <p className="text-gray-600">Distance</p>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   const renderLeaderboard = () => {
     const leaderboardData = [
       { rank: 1, name: "John Doe", steps: 10000 },
@@ -95,7 +47,7 @@ const Home = () => {
         {/* Google Fit Connection Component */}
         <div className="w-full md:w-1/3 bg-white shadow-md rounded-lg border">
           <h2 className="text-xl font-bold p-4 border-b">Google Fit Connection</h2>
-          {renderGoogleFitContent()}
+          <GoogleFitComponent />
         </div>
 
         {/* Leaderboard Component */}
