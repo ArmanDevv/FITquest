@@ -75,6 +75,8 @@ const GoogleFitComponent = () => {
       const caloriesData = await caloriesResponse.json();
 
       console.log('Raw Steps Data:', stepsData);
+      console.log('Detailed Steps Data:', stepsData.bucket[0].dataset);
+
       console.log('Raw Calories Data:', caloriesData);
 
       // Modified data extraction
@@ -82,19 +84,35 @@ const GoogleFitComponent = () => {
       let calories = 0;
 
       // Sum up all step values from all buckets
-      if (stepsData.bucket) {
-        stepsData.bucket.forEach(bucket => {
-          bucket.dataset.forEach(dataset => {
-            dataset.point.forEach(point => {
-              point.value.forEach(value => {
-                if (value.intVal) {
-                  steps += value.intVal;
-                }
-              });
-            });
-          });
+      
+if (stepsData.bucket) {
+  stepsData.bucket.forEach(bucket => {
+    bucket.dataset.forEach(dataset => {
+      dataset.point.forEach(point => {
+        point.value.forEach(value => {
+          if (value.intVal) {
+            steps += value.intVal; // Add the step count value here
+          }
         });
-      }
+      });
+    });
+  });
+}
+
+console.log('Processed Steps:', steps);
+      // if (stepsData.bucket) {
+      //   stepsData.bucket.forEach(bucket => {
+      //     bucket.dataset.forEach(dataset => {
+      //       dataset.point.forEach(point => {
+      //         point.value.forEach(value => {
+      //           if (value.intVal) {
+      //             steps += value.intVal;
+      //           }
+      //         });
+      //       });
+      //     });
+      //   });
+      // }
 
       // Sum up all calorie values from all buckets
       if (caloriesData.bucket) {
