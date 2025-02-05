@@ -1,32 +1,40 @@
-// First install required package:
-// npm install @react-oauth/google
-
 import React, { useState, useEffect } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
 
-const GOOGLE_FIT_SCOPES = [
-  'https://www.googleapis.com/auth/fitness.activity.read',
-  'https://www.googleapis.com/auth/fitness.body.read',
-];
-
-const useFitnessData = (accessToken) => {
+const GoogleFitComponent = () => {
+  const [accessToken, setAccessToken] = useState(null);
   const [fitnessData, setFitnessData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const login = useGoogleLogin({
+    scope: 'https://www.googleapis.com/auth/fitness.activity.read https://www.googleapis.com/auth/fitness.body.read',
+    onSuccess: async (response) => {
+      console.log('Login successful, token received:', response.access_token ? 'Yes' : 'No');
+      setAccessToken(response.access_token);
+    },
+    onError: (error) => {
+      console.error('Login Failed:', error);
+      setError('Failed to login to Google Fit');
+    },
+  });
 
   const fetchFitnessData = async () => {
     if (!accessToken) return;
 
     setLoading(true);
     try {
-      // Get today's start and end timestamps
       const now = new Date();
-      const startTime = new Date(now.setHours(0, 0, 0, 0)).getTime();
-      const endTime = new Date(now.setHours(23, 59, 59, 999)).getTime();
+      const endTime = now.getTime();
+      const startTime = endTime - (24 * 60 * 60 * 1000); // Last 24 hours
 
-      // Fetch steps data
+      console.log('Fetching data for timerange:', {
+        start: new Date(startTime).toISOString(),
+        end: new Date(endTime).toISOString()
+      });
+
       const stepsResponse = await fetch(
-        `https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate`,
+        'https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate',
         {
           method: 'POST',
           headers: {
@@ -35,19 +43,17 @@ const useFitnessData = (accessToken) => {
           },
           body: JSON.stringify({
             aggregateBy: [{
-              dataTypeName: "com.google.step_count.delta",
-              dataSourceId: "derived:com.google.step_count.delta:com.google.android.gms:estimated_steps"
+              dataTypeName: "com.google.step_count.delta"
             }],
-            bucketByTime: { durationMillis: 86400000 }, // 24 hours
+            bucketByTime: { durationMillis: 86400000 },
             startTimeMillis: startTime,
             endTimeMillis: endTime,
           }),
         }
       );
 
-      // Fetch calories data
       const caloriesResponse = await fetch(
-        `https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate`,
+        'https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate',
         {
           method: 'POST',
           headers: {
@@ -56,8 +62,7 @@ const useFitnessData = (accessToken) => {
           },
           body: JSON.stringify({
             aggregateBy: [{
-              dataTypeName: "com.google.calories.expended",
-              dataSourceId: "derived:com.google.calories.expended:com.google.android.gms:merge_calories_expended"
+              dataTypeName: "com.google.calories.expended"
             }],
             bucketByTime: { durationMillis: 86400000 },
             startTimeMillis: startTime,
@@ -69,48 +74,72 @@ const useFitnessData = (accessToken) => {
       const stepsData = await stepsResponse.json();
       const caloriesData = await caloriesResponse.json();
 
-      // Extract values from the response
-      const steps = stepsData.bucket[0]?.dataset[0]?.point[0]?.value[0]?.intVal || 0;
-      const calories = Math.round(caloriesData.bucket[0]?.dataset[0]?.point[0]?.value[0]?.fpVal || 0);
+      console.log('Raw Steps Data:', stepsData);
+      console.log('Raw Calories Data:', caloriesData);
 
-      setFitnessData({ steps, calories });
+      // Modified data extraction
+      let steps = 0;
+      let calories = 0;
+
+      // Sum up all step values from all buckets
+      if (stepsData.bucket) {
+        stepsData.bucket.forEach(bucket => {
+          bucket.dataset.forEach(dataset => {
+            dataset.point.forEach(point => {
+              point.value.forEach(value => {
+                if (value.intVal) {
+                  steps += value.intVal;
+                }
+              });
+            });
+          });
+        });
+      }
+
+      // Sum up all calorie values from all buckets
+      if (caloriesData.bucket) {
+        caloriesData.bucket.forEach(bucket => {
+          bucket.dataset.forEach(dataset => {
+            dataset.point.forEach(point => {
+              point.value.forEach(value => {
+                if (value.fpVal) {
+                  calories += value.fpVal;
+                }
+              });
+            });
+          });
+        });
+      }
+
+      console.log('Processed data:', { steps, calories });
+
+      if (steps === 0 && calories === 0) {
+        setError(`No fitness data found for the last 24 hours. If you just set up Google Fit, please wait a few hours for data to sync.`);
+      } else {
+        setFitnessData({
+          steps: steps,
+          calories: Math.round(calories)
+        });
+        setError(null);
+      }
+
     } catch (err) {
-      setError(err.message);
+      console.error('Fetch error:', err);
+      setError(`Error fetching fitness data: ${err.message}`);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchFitnessData();
+    if (accessToken) {
+      fetchFitnessData();
+    }
   }, [accessToken]);
-
-  return { fitnessData, loading, error, refetch: fetchFitnessData };
-};
-
-const GoogleFitComponent = () => {
-  const [accessToken, setAccessToken] = useState(null);
-  const { fitnessData, loading, error } = useFitnessData(accessToken);
-
-  const login = useGoogleLogin({
-    scope: GOOGLE_FIT_SCOPES.join(' '),
-    onSuccess: async (response) => {
-      setAccessToken(response.access_token);
-    },
-    onError: (error) => console.error('Login Failed:', error),
-  });
-
-  if (error) {
-    return (
-      <div className="p-4 text-red-600">
-        Error loading fitness data: {error}
-      </div>
-    );
-  }
 
   if (!accessToken) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center h-full p-4">
         <button
           onClick={() => login()}
           className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded flex items-center gap-2"
@@ -126,8 +155,28 @@ const GoogleFitComponent = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center h-full p-4">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <h3 className="text-yellow-800 font-medium mb-2">Unable to Load Fitness Data</h3>
+          <p className="text-yellow-700">{error}</p>
+          <button 
+            onClick={() => {
+              setAccessToken(null);
+              setError(null);
+            }}
+            className="mt-4 bg-yellow-100 text-yellow-800 px-4 py-2 rounded hover:bg-yellow-200"
+          >
+            Disconnect and Try Again
+          </button>
+        </div>
       </div>
     );
   }
