@@ -11,7 +11,7 @@ const Home = () => {
 
     if (leaderboardData.length === 0) {
       return (
-        <div className="flex items-center justify-center h-full">
+        <div className="flex items-center justify-center h-30">
           <p className="text-gray-500">Leaderboard coming soon!</p>
         </div>
       );
@@ -58,9 +58,9 @@ const Home = () => {
       </div>
 
       {/* Map Component */}
-      <div className="w-full bg-white shadow-md rounded-lg border">
+      <div className="w-full bg-white shadow-md rounded-lg border ">
         <h2 className="text-xl font-bold p-4 border-b">Player Map</h2>
-        <div className="h-[500px] bg-gray-100 flex items-center justify-center">
+        <div className="h-[250px] bg-gray-100 flex items-center justify-center">
           <p className="text-gray-500">Map placeholder</p>
         </div>
       </div>
