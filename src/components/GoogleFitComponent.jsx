@@ -12,6 +12,7 @@ const GoogleFitComponent = () => {
     onSuccess: async (response) => {
       console.log('Login successful, token received:', response.access_token ? 'Yes' : 'No');
       setAccessToken(response.access_token);
+      sessionStorage.setItem('accessToken', response.access_token);
     },
     onError: (error) => {
       console.error('Login Failed:', error);
@@ -132,12 +133,15 @@ console.log('Processed Steps:', steps);
       console.log('Processed data:', { steps, calories });
 
       if (steps === 0 && calories === 0) {
-        setError(`No fitness data found for the last 24 hours. If you just set up Google Fit, please wait a few hours for data to sync.`);
+        setError('No fitness data found for the last 24 hours. If you just set up Google Fit, please wait a few hours for data to sync.');
       } else {
-        setFitnessData({
+        const fitnessDetails = {
           steps: steps,
           calories: Math.round(calories)
-        });
+        };
+      
+        setFitnessData(fitnessDetails);
+        sessionStorage.setItem('fitnessData', JSON.stringify(fitnessDetails)); // Save to session storage
         setError(null);
       }
 
@@ -148,6 +152,20 @@ console.log('Processed Steps:', steps);
       setLoading(false);
     }
   };
+
+  useEffect(()=>{
+    const storedToken = sessionStorage.getItem('accessToken');
+    if(storedToken){
+      setAccessToken(storedToken);
+    }
+  },[]);
+  
+  useEffect(() => {
+    const storedData = sessionStorage.getItem('fitnessData');
+    if (storedData) {
+      setFitnessData(JSON.parse(storedData));
+    }
+  }, []);
 
   useEffect(() => {
     if (accessToken) {
