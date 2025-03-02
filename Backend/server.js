@@ -23,7 +23,7 @@ app.use(express.json());
 
 const YOUR_GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const YOUR_GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const YOUR_REDIRECT_URI = 'http://localhost:5175';
+const YOUR_REDIRECT_URI = `${import.meta.env.VITE_REACT_APP_BACKEND_BASEURL}`;
 
 // Add the new route to save the user data
 // Modify the save-fitness-data endpoint in server.js

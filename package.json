@@ -2,5 +2,12 @@
   "dependencies": {
     "@react-google-maps/api": "^2.20.5",
     "git-filter-repo": "^0.0.30"
+  },
+  "scripts": {
+  "build": "vite build"
+},
+
+  "devDependencies": {
+    "vite": "^6.2.0"
   }
 }
