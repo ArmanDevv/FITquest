@@ -24,7 +24,7 @@ const TokenCashing = () => {
 
   const fetchTokens = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/user-tokens/${userEmail}`);
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/user-tokens/${userEmail}`);
       if (response.ok) {
         const data = await response.json();
         setTotalTokens(data.totalTokens);
@@ -36,7 +36,7 @@ const TokenCashing = () => {
 
   const fetchPaymentHistory = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/payment-history/${userEmail}`);
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/payment-history/${userEmail}`);
       if (response.ok) {
         const data = await response.json();
         setPaymentHistory(data);
@@ -62,7 +62,7 @@ const TokenCashing = () => {
     setSuccess('');
 
     try {
-      const response = await fetch('http://localhost:5000/cashout-tokens', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/cashout-tokens`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: userEmail, tokensToRedeem }),

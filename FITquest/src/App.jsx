@@ -12,7 +12,7 @@ function App() {
   return (
    
     <GoogleMapsProvider>
-   <GoogleOAuthProvider clientId={process.env.CLIENT}>
+   <GoogleOAuthProvider clientId={import.meta.env.VITE_CLIENT}>
   <div className='flex flex-col bg-gradient-to-r from-black  to-black text-white'>
       <Navbar/>
      <Home/>

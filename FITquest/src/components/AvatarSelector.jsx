@@ -138,7 +138,7 @@ const AvatarSelector = () => {
     
     try {
       // Save to your backend
-      await fetch('http://localhost:5000/update-avatar', {
+      await fetch(`${import.meta.env.VITE_API_BASE_URL}/update-avatar`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

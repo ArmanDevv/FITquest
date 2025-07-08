@@ -78,7 +78,7 @@ const handleChallenge = async (user) => {
     
     console.log('challenge is for' + challengeData.steps)
     try {
-      const response = await fetch("http://localhost:5000/challenge", {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/challenge`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(challengeData),
@@ -101,12 +101,12 @@ const handleChallenge = async (user) => {
     const fetchLeaderboardAndChallenges = async () => {
       try {
         // Fetch leaderboard data
-        const leaderboardRes = await fetch("http://localhost:5000/leaderboard");
+        const leaderboardRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/leaderboard`);
         const leaderboardData = await leaderboardRes.json();
         
         // Fetch all challenges
         const email = localStorage.getItem("email");
-        const challengesRes = await fetch(`http://localhost:5000/pending-challenges/${email}`);
+        const challengesRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/pending-challenges/${email}`);
         const pendingChallenges = await challengesRes.json();
         
         // Combine the data and update challenge status

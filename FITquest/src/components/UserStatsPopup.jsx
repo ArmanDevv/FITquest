@@ -8,7 +8,7 @@ const UserStatsPopup = ({ user, isVisible, onClose }) => {
     const fetchTokenData = async () => {
       if (user && user.email) {
         try {
-          const response = await fetch(`http://localhost:5000/user-tokens/${user.email}`);
+          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/user-tokens/${user.email}`);
           if (response.ok) {
             const data = await response.json();
             setTokenData(data);

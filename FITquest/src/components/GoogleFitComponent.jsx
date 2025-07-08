@@ -33,7 +33,7 @@ const GoogleFitComponent = () => {
   });
 
   const exchangeAuthCode = async (code) => {
-    const response = await fetch('http://localhost:5000/exchange-code', {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/exchange-code`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -48,7 +48,7 @@ const GoogleFitComponent = () => {
 
   const refreshAccessToken = async () => {
     try {
-      const response = await fetch('http://localhost:5000/refresh-token', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/refresh-token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -83,7 +83,7 @@ const GoogleFitComponent = () => {
               longitude: position.coords.longitude,
             });
             
-            const response = await fetch('http://localhost:5000/update-location', {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/update-location`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -114,7 +114,7 @@ const GoogleFitComponent = () => {
 
   const saveFitnessDataToDB = async (email, steps, calories, name) => {
     try {
-      const response = await fetch("http://localhost:5000/save-fitness-data", {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/save-fitness-data`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

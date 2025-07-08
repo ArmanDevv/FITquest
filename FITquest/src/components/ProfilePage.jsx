@@ -20,7 +20,7 @@ const ChallengeProgress = ({ challenge, userEmail }) => {
   useEffect(() => {
     const updateProgress = async () => {
       try {
-        const response = await fetch('http://localhost:5000/update-challenge-steps', {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/update-challenge-steps`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -115,7 +115,7 @@ const ProfilePage = () => {
     }
   
     try {
-      const response = await fetch(`http://localhost:5000/accept-challenge/${challenge._id}`, {  
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/accept-challenge/${challenge._id}`, {  
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -133,7 +133,7 @@ const ProfilePage = () => {
   
   const handleDecline = async (challenge) => {
     try {
-      const response = await fetch(`http://localhost:5000/decline-challenge`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/decline-challenge`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ challengeId: challenge._id }),
@@ -153,7 +153,7 @@ const ProfilePage = () => {
   const handleDeleteChallenge = async (challengeId) => {
     try {
       const response = await fetch(
-        `http://localhost:5000/delete-challenge/${challengeId}/${userEmail}`,
+          `${import.meta.env.VITE_API_BASE_URL}/delete-challenge/${challengeId}/${userEmail}`,
         { method: 'DELETE' }
       );
 
@@ -168,7 +168,7 @@ const ProfilePage = () => {
   const handleDeleteAllCompleted = async () => {
     try {
       const response = await fetch(
-        `http://localhost:5000/delete-all-completed/${userEmail}`,
+      `${import.meta.env.VITE_API_BASE_URL}/delete-all-completed/${userEmail}`,
         { method: 'DELETE' }
       );
 
@@ -186,7 +186,7 @@ const ProfilePage = () => {
     const email = localStorage.getItem('email');
     if (email) {
       try {
-        const response = await fetch(`http://localhost:5000/user-tokens/${email}`);
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/user-tokens/${email}`);
         if (response.ok) {
           const data = await response.json();
           setTokens({
@@ -205,18 +205,18 @@ const ProfilePage = () => {
     if (email) {
       try {
         // Fetch incoming challenges (as recipient)
-        const responsePending = await fetch(`http://localhost:5000/incoming-challenges/${email}`);
+        const responsePending = await fetch(`${import.meta.env.VITE_API_BASE_URL}/incoming-challenges/${email}`);
         if (responsePending.ok) {
           const challenges = await responsePending.json();
           setChallengeRequests(challenges);
         }
 
         // Fetch accepted challenges (as recipient)
-        const responseAccepted = await fetch(`http://localhost:5000/upcoming-challenges/${email}`);
+        const responseAccepted = await fetch(`${import.meta.env.VITE_API_BASE_URL}/upcoming-challenges/${email}`);
         const recipientChallenges = await responseAccepted.ok ? await responseAccepted.json() : [];
 
         // Fetch challenges where user is challenger
-        const responseChallenger = await fetch(`http://localhost:5000/challenger-challenges/${email}`);
+        const responseChallenger = await fetch(`${import.meta.env.VITE_API_BASE_URL}/challenger-challenges/${email}`);
         const challengerChallenges = await responseChallenger.ok ? await responseChallenger.json() : [];
 
         // Combine both sets of challenges
@@ -250,7 +250,7 @@ const ProfilePage = () => {
   // Helper function for decline accepted challenge
   const handleDeclineAccepted = async (challengeId) => {
     try {
-      const response = await fetch('http://localhost:5000/decline-accepted-challenge', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/decline-accepted-challenge`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

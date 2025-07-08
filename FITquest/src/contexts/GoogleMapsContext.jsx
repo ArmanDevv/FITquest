@@ -12,7 +12,7 @@ export const GoogleMapsProvider = ({ children }) => {
   return (
     <GoogleMapsContext.Provider value={{ isLoaded, loadError }}>
       <LoadScript
-        googleMapsApiKey= {process.env.API}
+        googleMapsApiKey= {import.meta.env.VITE_API}
         onLoad={() => setIsLoaded(true)}
         onError={(error) => setLoadError(error)}
       >

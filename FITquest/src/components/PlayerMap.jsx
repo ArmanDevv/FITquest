@@ -142,7 +142,7 @@ const PlayerMap = () => {
 
   const fetchPlayers = async () => {
     try {
-      const response = await fetch('http://localhost:5000/players-location');
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/players-location`);
       const data = await response.json();
       setPlayers(data);
       
