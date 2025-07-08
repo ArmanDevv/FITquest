@@ -18,7 +18,11 @@ mongoose.connect(MONGO_URI, {
   .catch(err => console.log('Error connecting to MongoDB:', err));
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: ['https://fitquest-01.vercel.app'], // or '*' for testing
+  credentials: true
+}));
+
 app.use(express.json());
 
 const YOUR_GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
