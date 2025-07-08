@@ -168,21 +168,22 @@ const GoogleFitComponent = () => {
       }
   
       const caloriesResponse = await fetch(
-        "https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            aggregateBy: [{ dataTypeName: "com.google.calories.expended" }],
-            bucketByTime: { durationMillis: 86400000 },
-            startTimeMillis: startTime,
-            endTimeMillis: endTime,
-          }),
-        }
-      );
+  "https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate",
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`, // ✅ Use `token`, not `accessToken`
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      aggregateBy: [{ dataTypeName: "com.google.calories.expended" }],
+      bucketByTime: { durationMillis: 86400000 },
+      startTimeMillis: startTime,
+      endTimeMillis: endTime,
+    }),
+  }
+);
+
   
       const stepsData = await stepsResponse.json();
       const caloriesData = await caloriesResponse.json();
@@ -223,7 +224,7 @@ const GoogleFitComponent = () => {
           "No fitness data found for the last 24 hours. If you just set up Google Fit, please wait a few hours for data to sync."
         );
       } else {
-        const userInfo = await fetchGoogleUserInfo(accessToken); // Contains both email and name
+const userInfo = await fetchGoogleUserInfo(token); // ✅ Use token
         if (!userInfo) {
           setError("Failed to fetch user info.");
           return;
