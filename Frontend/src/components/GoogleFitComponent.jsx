@@ -37,7 +37,7 @@ const GoogleFitComponent = () => {
   });
 
   const exchangeAuthCode = async (code) => {
-    const tokenInfoRes = await fetch(`https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${access_token}`);
+    const tokenInfoRes = await fetch(`https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${accessToken}`);
 const tokenInfo = await tokenInfoRes.json();
 console.log("Granted scopes:", tokenInfo.scope);
 
