@@ -18,6 +18,7 @@ const GoogleFitComponent = () => {
     onSuccess: async (codeResponse) => {
       try {
         const tokens = await exchangeAuthCode(codeResponse.code);
+        console.log("codeResponse", codeResponse);
         localStorage.setItem('googleFitToken', tokens.access_token);
         localStorage.setItem('googleFitRefreshToken', tokens.refresh_token);
         setAccessToken(tokens.access_token);
