@@ -19,6 +19,7 @@ const GoogleFitComponent = () => {
       try {
         const tokens = await exchangeAuthCode(codeResponse.code);
         console.log("codeResponse", codeResponse);
+
         localStorage.setItem('googleFitToken', tokens.access_token);
         localStorage.setItem('googleFitRefreshToken', tokens.refresh_token);
         setAccessToken(tokens.access_token);
@@ -42,6 +43,10 @@ const GoogleFitComponent = () => {
       },
       body: JSON.stringify({ code }),
     });
+    console.log("Exchange Code Response Status:", response.status);
+
+    const text = await response.text(); // even if not JSON
+    console.log("Exchange Code Response Text:", text);
     if (!response.ok) {
       throw new Error('Failed to exchange auth code');
     }
