@@ -12,6 +12,7 @@ const GoogleFitComponent = () => {
 
   const login = useGoogleLogin({
     flow: 'auth-code',
+    redirect_uri: 'https://fitquest-01.vercel.app', 
     scope: 'https://www.googleapis.com/auth/fitness.activity.read https://www.googleapis.com/auth/fitness.body.read https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
     access_type: 'offline',
     onSuccess: async (codeResponse) => {
