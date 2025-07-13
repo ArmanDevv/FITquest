@@ -36,22 +36,30 @@ const GoogleFitComponent = () => {
   });
 
   const exchangeAuthCode = async (code) => {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/exchange-code`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ code }),
-    });
-    console.log("Exchange Code Response Status:", response.status);
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/exchange-code`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ code }),
+  });
 
-    const text = await response.text(); // even if not JSON
-    console.log("Exchange Code Response Text:", text);
-    if (!response.ok) {
-      throw new Error('Failed to exchange auth code');
-    }
-    return response.json();
-  };
+  console.log("Exchange Code Response Status:", response.status);
+
+  const text = await response.text(); // Read once
+  console.log("Exchange Code Response Text:", text);
+
+  if (!response.ok) {
+    throw new Error('Failed to exchange auth code');
+  }
+
+  try {
+    return JSON.parse(text); // ✅ Manually parse and return
+  } catch (err) {
+    throw new Error('Failed to parse JSON from token exchange response');
+  }
+};
+
 
   const refreshAccessToken = async () => {
     try {
