@@ -37,6 +37,10 @@ const GoogleFitComponent = () => {
   });
 
   const exchangeAuthCode = async (code) => {
+    const tokenInfoRes = await fetch(`https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${tokens.access_token}`);
+const tokenInfo = await tokenInfoRes.json();
+console.log("Granted scopes:", tokenInfo.scope);
+
   const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/exchange-code`, {
     method: 'POST',
     headers: {
@@ -56,9 +60,11 @@ const GoogleFitComponent = () => {
 
   try {
     return JSON.parse(text); // ✅ Manually parse and return
+    
   } catch (err) {
     throw new Error('Failed to parse JSON from token exchange response');
   }
+  
 };
 
 
