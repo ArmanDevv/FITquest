@@ -12,7 +12,7 @@ const GoogleFitComponent = () => {
 
   const login = useGoogleLogin({
     flow: 'auth-code',
-    redirect_uri: 'https://fitquest-01.vercel.app', 
+ //   redirect_uri: 'https://fitquest-01.vercel.app', 
       prompt: 'consent',
     scope: 'https://www.googleapis.com/auth/fitness.activity.read https://www.googleapis.com/auth/fitness.body.read https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
     access_type: 'offline',
@@ -37,9 +37,6 @@ const GoogleFitComponent = () => {
   });
 
   const exchangeAuthCode = async (code) => {
-    const tokenInfoRes = await fetch(`https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${accessToken}`);
-const tokenInfo = await tokenInfoRes.json();
-console.log("Granted scopes:", tokenInfo.scope);
 
   const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/exchange-code`, {
     method: 'POST',
@@ -154,124 +151,116 @@ console.log("Granted scopes:", tokenInfo.scope);
   };
   
 
-  const fetchFitnessData = async (token = accessToken) => {
-    if (!token) return;
-  
-    setLoading(true);
-    try {
-      const now = new Date();
-      const endTime = now.getTime() + 5.5 * 60 * 60 * 1000;
-      const startTime = endTime - 24 * 60 * 60 * 1000;
-  
-      const stepsResponse = await fetch(
-        "https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            aggregateBy: [{ dataTypeName: "com.google.step_count.delta" }],
-            bucketByTime: { durationMillis: 86400000 },
-            startTimeMillis: startTime,
-            endTimeMillis: endTime,
-          }),
-        }
-      );
-  
-      if (stepsResponse.status === 401 && refreshToken) {
-        const newToken = await refreshAccessToken();
-        return fetchFitnessData(newToken);
-      }
-  
-      if (!stepsResponse.ok) {
-        throw new Error(`HTTP error! status: ${stepsResponse.status}`);
-      }
-  
-      const caloriesResponse = await fetch(
-  "https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate",
-  {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`, // ✅ Use `token`, not `accessToken`
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      aggregateBy: [{ dataTypeName: "com.google.calories.expended" }],
-      bucketByTime: { durationMillis: 86400000 },
-      startTimeMillis: startTime,
-      endTimeMillis: endTime,
-    }),
-  }
-);
+const fetchFitnessData = async (token = accessToken) => {
+  if (!token) return;
 
-  
-      const stepsData = await stepsResponse.json();
-      const caloriesData = await caloriesResponse.json();
-  
-      let steps = 0;
-      let calories = 0;
-  
-      if (stepsData.bucket) {
-        stepsData.bucket.forEach((bucket) => {
-          bucket.dataset.forEach((dataset) => {
-            dataset.point.forEach((point) => {
-              point.value.forEach((value) => {
-                if (value.intVal) {
-                  steps += value.intVal;
-                }
-              });
-            });
-          });
-        });
+  setLoading(true);
+  try {
+    const endTime = Date.now(); // current real-time
+    const startTime = endTime - 24 * 60 * 60 * 1000; // 24h window
+
+    console.log("Current IST Time:", new Date().toString());
+    console.log("StartTime (IST):", new Date(startTime).toString());
+    console.log("EndTime (IST):", new Date(endTime).toString());
+
+    // === REAL-TIME STEPS via RAW DATASET ===
+    const dataSourceId = "derived:com.google.step_count.delta:com.google.android.gms:estimated_steps";
+    const dataset = `${startTime * 1000000}-${endTime * 1000000}`; // nanoseconds
+
+    const stepsRes = await fetch(
+      `https://www.googleapis.com/fitness/v1/users/me/dataSources/${encodeURIComponent(dataSourceId)}/datasets/${dataset}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
-  
-      if (caloriesData.bucket) {
-        caloriesData.bucket.forEach((bucket) => {
-          bucket.dataset.forEach((dataset) => {
-            dataset.point.forEach((point) => {
-              point.value.forEach((value) => {
-                if (value.fpVal) {
-                  calories += value.fpVal;
-                }
-              });
-            });
-          });
-        });
-      }
-  
-      if (steps === 0 && calories === 0) {
-        setError(
-          "No fitness data found for the last 24 hours. If you just set up Google Fit, please wait a few hours for data to sync."
-        );
-      } else {
-const userInfo = await fetchGoogleUserInfo(token); // ✅ Use token
-        if (!userInfo) {
-          setError("Failed to fetch user info.");
-          return;
-        }
-  
-        const { email, name } = userInfo;
-        localStorage.setItem("email", email);
-        localStorage.setItem("name", name);
-  
-        await saveFitnessDataToDB(email, steps, calories, name);
-        setFitnessData({
-          steps: steps,
-          calories: Math.round(calories),
-        });
-        setError(null);
-        setLastUpdated(new Date());
-      }
-    } catch (err) {
-      console.error("Fetch error:", err);
-      setError(`Error fetching fitness data: ${err.message}`);
-    } finally {
-      setLoading(false);
-      setIsRefreshing(false); // Hide spinner after refresh
+    );
+
+    if (stepsRes.status === 401 && refreshToken) {
+      const newToken = await refreshAccessToken();
+      return fetchFitnessData(newToken);
     }
-  };
+
+    if (!stepsRes.ok) {
+      throw new Error(`HTTP error! status: ${stepsRes.status}`);
+    }
+
+    const rawStepsData = await stepsRes.json();
+    let steps = 0;
+
+    rawStepsData.point.forEach((point) => {
+      point.value.forEach((val) => {
+        if (val.intVal) steps += val.intVal;
+      });
+    });
+
+    // === Calories (Keep aggregate method) ===
+    const caloriesRes = await fetch(
+      "https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          aggregateBy: [{ dataTypeName: "com.google.calories.expended" }],
+          bucketByTime: { durationMillis: 86400000 },
+          startTimeMillis: startTime,
+          endTimeMillis: endTime,
+        }),
+      }
+    );
+
+    const caloriesData = await caloriesRes.json();
+    let calories = 0;
+
+    if (caloriesData.bucket) {
+      caloriesData.bucket.forEach((bucket) => {
+        bucket.dataset.forEach((dataset) => {
+          dataset.point.forEach((point) => {
+            point.value.forEach((value) => {
+              if (value.fpVal) {
+                calories += value.fpVal;
+              }
+            });
+          });
+        });
+      });
+    }
+
+    if (steps === 0 && calories === 0) {
+      setError(
+        "No fitness data found for the last 24 hours. If you just set up Google Fit, please wait a few hours for data to sync."
+      );
+    } else {
+      const userInfo = await fetchGoogleUserInfo(token);
+      if (!userInfo) {
+        setError("Failed to fetch user info.");
+        return;
+      }
+
+      const { email, name } = userInfo;
+      localStorage.setItem("email", email);
+      localStorage.setItem("name", name);
+
+      await saveFitnessDataToDB(email, steps, calories, name);
+      setFitnessData({
+        steps: steps,
+        calories: Math.round(calories),
+      });
+      setError(null);
+      setLastUpdated(new Date());
+    }
+  } catch (err) {
+    console.error("Fetch error:", err);
+    setError(`Error fetching fitness data: ${err.message}`);
+  } finally {
+    setLoading(false);
+    setIsRefreshing(false);
+  }
+};
+
   
 
   const fetchGoogleUserInfo = async (accessToken) => {
@@ -299,7 +288,7 @@ useEffect(() => {
     updateUserLocation(); // Get and update location right away
 
     // Set up intervals for both fitness and location updates
-    const fitnessInterval = setInterval(fetchFitnessData, 60 * 1000);
+    const fitnessInterval = setInterval(fetchFitnessData, 60 * 60* 1000);
     const locationInterval = setInterval(updateUserLocation, 60 * 1000); // Update location every minute
 
     return () => {

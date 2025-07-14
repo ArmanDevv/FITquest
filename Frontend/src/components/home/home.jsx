@@ -195,7 +195,7 @@ const handleChallenge = async (user) => {
                     hover:transform hover:scale-102 cursor-pointer
                   `}
                 >
-                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div className="flex items-center space-x-4">
                       <div className={`
                         w-8 h-8 rounded-full flex items-center justify-center text-sm
@@ -215,7 +215,7 @@ const handleChallenge = async (user) => {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center space-x-6">
+                    <div className="flex flex-col md:flex-row md:items-center md:space-x-6 gap-2 md:gap-0">
                       <div className="text-right">
                         <p className="text-sm text-gray-400">Steps</p>
                         <p className="text-lg font-semibold text-gray-100">{user.steps.toLocaleString()}</p>

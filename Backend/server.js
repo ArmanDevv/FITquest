@@ -18,10 +18,12 @@ mongoose.connect(MONGO_URI, {
   .catch(err => console.log('Error connecting to MongoDB:', err));
 
 const app = express();
-app.use(cors({
-  origin: ['https://fitquest-01.vercel.app'], // or '*' for testing
-  credentials: true
-}));
+// app.use(cors({
+//   origin: ['https://fitquest-01.vercel.app'], // or '*' for testing
+//   credentials: true
+// }));
+
+app.use(cors()); //remove this while deploying 
 
 app.use(express.json());
 
@@ -295,26 +297,6 @@ app.get('/pending-challenges/:email', async (req, res) => {
 });
 
 // Route to get incoming challenges for a specific user
-app.get('/incoming-challenges/:email', async (req, res) => {
-  const { email } = req.params;
-
-  try {
-    const challenges = await Challenge.find({ recipient: email, status: 'pending' });
-    res.status(200).json(challenges);
-  } catch (error) {
-    console.error('Error fetching incoming challenges:', error);
-    res.status(500).json({ error: 'Failed to fetch incoming challenges' });
-  }
-});
-app.get('/upcoming-challenges/:email', async (req, res) => {
-  try {
-    const { email } = req.params;
-    const challenges = await Challenge.find({ recipient: email, status: "accepted" });
-    res.json(challenges);
-  } catch (error) {
-    res.status(500).json({ error: "Error fetching upcoming challenges" });
-  }
-});
 
 app.post('/update-challenge-steps', async (req, res) => {
   const { challengeId, userEmail, currentSteps } = req.body;
@@ -380,6 +362,43 @@ app.post('/update-challenge-steps', async (req, res) => {
   }
 });
 
+app.post('/decline-accepted-challenge', async (req, res) => {
+  const { challengeId, userEmail } = req.body;
+
+  try {
+    const challenge = await Challenge.findById(challengeId);
+    
+    if (!challenge) {
+      return res.status(404).json({ error: 'Challenge not found' });
+    }
+
+    // Verify the user is either the challenger or recipient
+    if (challenge.challenger !== userEmail && challenge.recipient !== userEmail) {
+      return res.status(403).json({ error: 'Unauthorized to decline this challenge' });
+    }
+
+    // Only allow declining accepted challenges
+    if (challenge.status !== 'accepted') {
+      return res.status(400).json({ error: 'Can only decline accepted challenges' });
+    }
+
+    // Set challenge status to 'declined' and save who declined it
+    challenge.status = 'declined';
+    challenge.declinedBy = userEmail;
+    challenge.declinedAt = new Date();
+    
+    await challenge.save();
+
+    res.json({ 
+      message: 'Challenge declined successfully',
+      challenge
+    });
+  } catch (error) {
+    console.error('Error declining accepted challenge:', error);
+    res.status(500).json({ error: 'Failed to decline challenge' });
+  }
+});
+
 // Accept a challenge
 // Accept a challenge (Fixed)
 app.post('/accept-challenge/:id', async (req, res) => {
@@ -415,7 +434,6 @@ app.post('/accept-challenge/:id', async (req, res) => {
   }
 });
 
-// Decline a challenge
 app.post('/decline-challenge', async (req, res) => {
   const { challengeId } = req.body;
 
@@ -436,43 +454,6 @@ app.post('/decline-challenge', async (req, res) => {
     res.json({ message: 'Challenge declined successfully!', challenge });
   } catch (error) {
     console.error('Error declining challenge:', error);
-    res.status(500).json({ error: 'Failed to decline challenge' });
-  }
-});
-
-app.post('/decline-accepted-challenge', async (req, res) => {
-  const { challengeId, userEmail } = req.body;
-
-  try {
-    const challenge = await Challenge.findById(challengeId);
-    
-    if (!challenge) {
-      return res.status(404).json({ error: 'Challenge not found' });
-    }
-
-    // Verify the user is either the challenger or recipient
-    if (challenge.challenger !== userEmail && challenge.recipient !== userEmail) {
-      return res.status(403).json({ error: 'Unauthorized to decline this challenge' });
-    }
-
-    // Only allow declining accepted challenges
-    if (challenge.status !== 'accepted') {
-      return res.status(400).json({ error: 'Can only decline accepted challenges' });
-    }
-
-    // Set challenge status to 'declined' and save who declined it
-    challenge.status = 'declined';
-    challenge.declinedBy = userEmail;
-    challenge.declinedAt = new Date();
-    
-    await challenge.save();
-
-    res.json({ 
-      message: 'Challenge declined successfully',
-      challenge
-    });
-  } catch (error) {
-    console.error('Error declining accepted challenge:', error);
     res.status(500).json({ error: 'Failed to decline challenge' });
   }
 });
@@ -561,7 +542,26 @@ app.get('/user-tokens/:email', async (req, res) => {
     }
   });
 
+app.get('/incoming-challenges/:email', async (req, res) => {
+  const { email } = req.params;
 
+  try {
+    const challenges = await Challenge.find({ recipient: email, status: 'pending' });
+    res.status(200).json(challenges);
+  } catch (error) {
+    console.error('Error fetching incoming challenges:', error);
+    res.status(500).json({ error: 'Failed to fetch incoming challenges' });
+  }
+});
+app.get('/upcoming-challenges/:email', async (req, res) => {
+  try {
+    const { email } = req.params;
+    const challenges = await Challenge.find({ recipient: email, status: "accepted" });
+    res.json(challenges);
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching upcoming challenges" });
+  }
+});
 
 app.get('/challenger-challenges/:email', async (req, res) => {
   try {
