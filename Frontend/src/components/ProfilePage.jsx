@@ -200,39 +200,38 @@ const ProfilePage = () => {
     }
   };
 
-  const fetchChallenges = async () => {
-    const email = localStorage.getItem('email');
-    if (email) {
-      try {
-        // Fetch incoming challenges (as recipient)
-        const responsePending = await fetch(`${import.meta.env.VITE_API_BASE_URL}/incoming-challenges/${email}`);
-        if (responsePending.ok) {
-          const challenges = await responsePending.json();
-          setChallengeRequests(challenges);
-        }
+const fetchChallenges = async () => {
+  const email = localStorage.getItem('email');
+  if (email) {
+    try {
+      // Fetch incoming challenges (as recipient)
+      const responsePending = await fetch(`${import.meta.env.VITE_API_BASE_URL}/incoming-challenges/${email}`);
+      if (responsePending.ok) {
+        const challenges = await responsePending.json();
+        setChallengeRequests(challenges);
+      }
 
-        // Fetch accepted challenges (as recipient)
-        const responseAccepted = await fetch(`${import.meta.env.VITE_API_BASE_URL}/upcoming-challenges/${email}`);
-        const recipientChallenges = await responseAccepted.ok ? await responseAccepted.json() : [];
+      // Fetch accepted challenges (as recipient)
+      const responseAccepted = await fetch(`${import.meta.env.VITE_API_BASE_URL}/upcoming-challenges/${email}`);
+      const recipientChallenges = await responseAccepted.ok ? await responseAccepted.json() : [];
 
-        // Fetch challenges where user is challenger
-        const responseChallenger = await fetch(`${import.meta.env.VITE_API_BASE_URL}/challenger-challenges/${email}`);
-        const challengerChallenges = await responseChallenger.ok ? await responseChallenger.json() : [];
+      // Fetch challenges where user is challenger
+      const responseChallenger = await fetch(`${import.meta.env.VITE_API_BASE_URL}/challenger-challenges/${email}`);
+      const challengerChallenges = await responseChallenger.ok ? await responseChallenger.json() : [];
 
-        // Combine both sets of challenges
-        setPastChallenges([...recipientChallenges, ...challengerChallenges]);
-        const filteredChallenges = [...recipientChallenges, ...challengerChallenges]
+      // FIXED: Apply filtering and then set the state
+      const filteredChallenges = [...recipientChallenges, ...challengerChallenges]
         .filter(challenge => 
           challenge.status !== 'declined' && 
           (!challenge.deletedFor || !challenge.deletedFor.includes(userEmail))
         );
       
       setPastChallenges(filteredChallenges);
-      } catch (error) {
-        console.error('Error fetching challenges:', error);
-      }
+    } catch (error) {
+      console.error('Error fetching challenges:', error);
     }
-  };
+  }
+};
 
   // useEffect hook for data fetching and intervals
   useEffect(() => {
