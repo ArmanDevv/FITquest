@@ -299,7 +299,7 @@ useEffect(() => {
     updateUserLocation(); // Get and update location right away
 
     // Set up intervals for both fitness and location updates
-    const fitnessInterval = setInterval(fetchFitnessData, 30 * 60 * 1000);
+    const fitnessInterval = setInterval(fetchFitnessData, 60 * 1000);
     const locationInterval = setInterval(updateUserLocation, 60 * 1000); // Update location every minute
 
     return () => {
