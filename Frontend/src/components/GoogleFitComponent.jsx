@@ -8,12 +8,12 @@ const GoogleFitComponent = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
-  const [isRefreshing, setIsRefreshing] = useState(false); // Track refreshing state
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const login = useGoogleLogin({
     flow: 'auth-code',
-   redirect_uri: 'https://fitquest-01.vercel.app',  //comment this for local
-      prompt: 'consent',
+    redirect_uri: 'https://fitquest-01.vercel.app',  //comment this for local
+    prompt: 'consent',
     scope: 'https://www.googleapis.com/auth/fitness.activity.read https://www.googleapis.com/auth/fitness.body.read https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
     access_type: 'offline',
     onSuccess: async (codeResponse) => {
@@ -37,33 +37,29 @@ const GoogleFitComponent = () => {
   });
 
   const exchangeAuthCode = async (code) => {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/exchange-code`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ code }),
+    });
 
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/exchange-code`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ code }),
-  });
+    console.log("Exchange Code Response Status:", response.status);
 
-  console.log("Exchange Code Response Status:", response.status);
+    const text = await response.text();
+    console.log("Exchange Code Response Text:", text);
 
-  const text = await response.text(); // Read once
-  console.log("Exchange Code Response Text:", text);
+    if (!response.ok) {
+      throw new Error('Failed to exchange auth code');
+    }
 
-  if (!response.ok) {
-    throw new Error('Failed to exchange auth code');
-  }
-
-  try {
-    return JSON.parse(text); // ✅ Manually parse and return
-    
-  } catch (err) {
-    throw new Error('Failed to parse JSON from token exchange response');
-  }
-  
-};
-
+    try {
+      return JSON.parse(text);
+    } catch (err) {
+      throw new Error('Failed to parse JSON from token exchange response');
+    }
+  };
 
   const refreshAccessToken = async () => {
     try {
@@ -90,13 +86,14 @@ const GoogleFitComponent = () => {
     }
   };
 
-  const updateUserLocation = async () => {
+  // Simplified - only update location once when user first connects
+  const updateUserLocationOnce = async () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           try {
             const email = localStorage.getItem('email');
-            console.log('Sending location update:', {
+            console.log('Sending initial location update:', {
               email,
               latitude: position.coords.latitude,
               longitude: position.coords.longitude,
@@ -138,7 +135,7 @@ const GoogleFitComponent = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, steps, calories, name }), // Include name
+        body: JSON.stringify({ email, steps, calories, name }),
       });
   
       if (!response.ok) {
@@ -149,119 +146,116 @@ const GoogleFitComponent = () => {
       console.error("Error saving data to DB:", err);
     }
   };
-  
 
-const fetchFitnessData = async (token = accessToken) => {
-  if (!token) return;
+  const fetchFitnessData = async (token = accessToken) => {
+    if (!token) return;
 
-  setLoading(true);
-  try {
-    const endTime = Date.now(); // current real-time
-    const startTime = endTime - 24 * 60 * 60 * 1000; // 24h window
+    setLoading(true);
+    try {
+      const endTime = Date.now();
+      const startTime = endTime - 24 * 60 * 60 * 1000;
 
-    console.log("Current IST Time:", new Date().toString());
-    console.log("StartTime (IST):", new Date(startTime).toString());
-    console.log("EndTime (IST):", new Date(endTime).toString());
+      console.log("Current IST Time:", new Date().toString());
+      console.log("StartTime (IST):", new Date(startTime).toString());
+      console.log("EndTime (IST):", new Date(endTime).toString());
 
-    // === REAL-TIME STEPS via RAW DATASET ===
-    const dataSourceId = "derived:com.google.step_count.delta:com.google.android.gms:estimated_steps";
-    const dataset = `${startTime * 1000000}-${endTime * 1000000}`; // nanoseconds
+      // === REAL-TIME STEPS via RAW DATASET ===
+      const dataSourceId = "derived:com.google.step_count.delta:com.google.android.gms:estimated_steps";
+      const dataset = `${startTime * 1000000}-${endTime * 1000000}`;
 
-    const stepsRes = await fetch(
-      `https://www.googleapis.com/fitness/v1/users/me/dataSources/${encodeURIComponent(dataSourceId)}/datasets/${dataset}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const stepsRes = await fetch(
+        `https://www.googleapis.com/fitness/v1/users/me/dataSources/${encodeURIComponent(dataSourceId)}/datasets/${dataset}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (stepsRes.status === 401 && refreshToken) {
+        const newToken = await refreshAccessToken();
+        return fetchFitnessData(newToken);
       }
-    );
 
-    if (stepsRes.status === 401 && refreshToken) {
-      const newToken = await refreshAccessToken();
-      return fetchFitnessData(newToken);
-    }
+      if (!stepsRes.ok) {
+        throw new Error(`HTTP error! status: ${stepsRes.status}`);
+      }
 
-    if (!stepsRes.ok) {
-      throw new Error(`HTTP error! status: ${stepsRes.status}`);
-    }
+      const rawStepsData = await stepsRes.json();
+      let steps = 0;
 
-    const rawStepsData = await stepsRes.json();
-    let steps = 0;
-
-    rawStepsData.point.forEach((point) => {
-      point.value.forEach((val) => {
-        if (val.intVal) steps += val.intVal;
+      rawStepsData.point.forEach((point) => {
+        point.value.forEach((val) => {
+          if (val.intVal) steps += val.intVal;
+        });
       });
-    });
 
-    // === Calories (Keep aggregate method) ===
-    const caloriesRes = await fetch(
-      "https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          aggregateBy: [{ dataTypeName: "com.google.calories.expended" }],
-          bucketByTime: { durationMillis: 86400000 },
-          startTimeMillis: startTime,
-          endTimeMillis: endTime,
-        }),
-      }
-    );
+      // === Calories (Keep aggregate method) ===
+      const caloriesRes = await fetch(
+        "https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            aggregateBy: [{ dataTypeName: "com.google.calories.expended" }],
+            bucketByTime: { durationMillis: 86400000 },
+            startTimeMillis: startTime,
+            endTimeMillis: endTime,
+          }),
+        }
+      );
 
-    const caloriesData = await caloriesRes.json();
-    let calories = 0;
+      const caloriesData = await caloriesRes.json();
+      let calories = 0;
 
-    if (caloriesData.bucket) {
-      caloriesData.bucket.forEach((bucket) => {
-        bucket.dataset.forEach((dataset) => {
-          dataset.point.forEach((point) => {
-            point.value.forEach((value) => {
-              if (value.fpVal) {
-                calories += value.fpVal;
-              }
+      if (caloriesData.bucket) {
+        caloriesData.bucket.forEach((bucket) => {
+          bucket.dataset.forEach((dataset) => {
+            dataset.point.forEach((point) => {
+              point.value.forEach((value) => {
+                if (value.fpVal) {
+                  calories += value.fpVal;
+                }
+              });
             });
           });
         });
-      });
-    }
-
-    if (steps === 0 && calories === 0) {
-      setError(
-        "No fitness data found for the last 24 hours. If you just set up Google Fit, please wait a few hours for data to sync."
-      );
-    } else {
-      const userInfo = await fetchGoogleUserInfo(token);
-      if (!userInfo) {
-        setError("Failed to fetch user info.");
-        return;
       }
 
-      const { email, name } = userInfo;
-      localStorage.setItem("email", email);
-      localStorage.setItem("name", name);
+      if (steps === 0 && calories === 0) {
+        setError(
+          "No fitness data found for the last 24 hours. If you just set up Google Fit, please wait a few hours for data to sync."
+        );
+      } else {
+        const userInfo = await fetchGoogleUserInfo(token);
+        if (!userInfo) {
+          setError("Failed to fetch user info.");
+          return;
+        }
 
-      await saveFitnessDataToDB(email, steps, calories, name);
-      setFitnessData({
-        steps: steps,
-        calories: Math.round(calories),
-      });
-      setError(null);
-      setLastUpdated(new Date());
+        const { email, name } = userInfo;
+        localStorage.setItem("email", email);
+        localStorage.setItem("name", name);
+
+        await saveFitnessDataToDB(email, steps, calories, name);
+        setFitnessData({
+          steps: steps,
+          calories: Math.round(calories),
+        });
+        setError(null);
+        setLastUpdated(new Date());
+      }
+    } catch (err) {
+      console.error("Fetch error:", err);
+      setError(`Error fetching fitness data: ${err.message}`);
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
     }
-  } catch (err) {
-    console.error("Fetch error:", err);
-    setError(`Error fetching fitness data: ${err.message}`);
-  } finally {
-    setLoading(false);
-    setIsRefreshing(false);
-  }
-};
-
-  
+  };
 
   const fetchGoogleUserInfo = async (accessToken) => {
     try {
@@ -270,34 +264,30 @@ const fetchFitnessData = async (token = accessToken) => {
       });
   
       const data = await response.json();
-      console.log("User Info:", data); // Contains email, name, picture, etc.
+      console.log("User Info:", data);
   
-      return { email: data.email, name: data.name }; // Now returning both email and name
+      return { email: data.email, name: data.name };
     } catch (error) {
       console.error("Error fetching user info:", error);
       return null;
     }
   };
-  
-  
 
-useEffect(() => {
-  if (accessToken) {
-    // Initial fetch and location update
-    fetchFitnessData();
-    updateUserLocation(); // Get and update location right away
+  // Simplified useEffect - only update location once when user first connects
+  useEffect(() => {
+    if (accessToken) {
+      // Initial fetch and one-time location update
+      fetchFitnessData();
+      updateUserLocationOnce(); // Get location only once when first connecting
 
-    // Set up intervals for both fitness and location updates
-    const fitnessInterval = setInterval(fetchFitnessData, 60 * 60* 1000);
-    const locationInterval = setInterval(updateUserLocation, 60 * 1000); // Update location every minute
+      // Only set up interval for fitness data updates (hourly)
+      const fitnessInterval = setInterval(fetchFitnessData, 60 * 60 * 1000);
 
-    return () => {
-      clearInterval(fitnessInterval);
-      clearInterval(locationInterval);
-    };
-  }
-}, [accessToken]);
-
+      return () => {
+        clearInterval(fitnessInterval);
+      };
+    }
+  }, [accessToken]);
 
   const handleDisconnect = () => {
     localStorage.removeItem('googleFitToken');
@@ -310,8 +300,13 @@ useEffect(() => {
   };
 
   const handleRefresh = () => {
-    setIsRefreshing(true); // Show spinner
+    setIsRefreshing(true);
     fetchFitnessData(accessToken);
+  };
+
+  // Optional: Add a manual location update button
+  const handleUpdateLocation = () => {
+    updateUserLocationOnce();
   };
 
   const formatLastUpdated = (date) => {
@@ -395,8 +390,14 @@ useEffect(() => {
             Refresh Data
           </button>
           <button
+            onClick={handleUpdateLocation}
+            className="mt-2 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
+          >
+            Update Location
+          </button>
+          <button
             onClick={handleDisconnect}
-            className="mt-2 ml-4 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded"
+            className="mt-2 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded"
           >
             Disconnect Google Fit
           </button>
