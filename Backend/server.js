@@ -18,12 +18,12 @@ mongoose.connect(MONGO_URI, {
   .catch(err => console.log('Error connecting to MongoDB:', err));
 
 const app = express();
-// app.use(cors({
-//   origin: ['https://fitquest-01.vercel.app'], // or '*' for testing
-//   credentials: true
-// }));
+app.use(cors({
+  origin: ['https://fitquest-01.vercel.app'], // or '*' for testing
+  credentials: true
+}));
 
-app.use(cors()); //remove this while deploying 
+// app.use(cors()); //remove this while deploying 
 
 app.use(express.json());
 
