@@ -7,7 +7,7 @@ FitQuest is a full-stack web application that gamifies your fitness journey by i
 ## 🚀 Features
 
 - 🔐 **Google OAuth Login** – Seamless sign-in using your Google account
-- 📊 **Google Fit API Integration** – Tracks daily steps, calories, distance, and more
+- 📊 **Google Fit API Integration** – Tracks daily steps and calories
 - 📈 **Live Stats Dashboard** – Displays fitness metrics in real-time
 - 🏆 **Gamification Mechanics** – Users can challenge others putting tokens in stake which can be cashed out  
 - 📆 **Daily Goals & Progress Bars** – Helps users stay accountable
